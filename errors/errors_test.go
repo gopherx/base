@@ -4,9 +4,9 @@ import (
 	"errors"
 	"testing"
 
+	"fmt"
 	"github.com/gopherx/base/errors/codes"
 	"strings"
-	"fmt"
 )
 
 // TestConstructors checks that we got a constructor func for every code in the codes package.
@@ -74,18 +74,14 @@ func TestConstructors(t *testing.T) {
 
 			return
 
-			fail:
-				t.Error(eparts[i])
+		fail:
+			t.Error(eparts[i])
 		}
 
 		checkDescLine(0, "", code, desc)
 		checkStackLine(1, "")
 		checkDescLine(3, "  ", codes.Internal, "waaat")
 		checkStackLine(4, "  ")
-
-		//for _, p := range eparts {
-		//	t.Log(p)
-		//}
 	}
 }
 
