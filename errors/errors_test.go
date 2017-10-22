@@ -99,3 +99,13 @@ func TestCallers(t *testing.T) {
 		t.Fatal(len(cs))
 	}
 }
+
+func TestCode(t *testing.T) {
+	// This is tested in the TestConstructors test but in that test we
+	// can't verify that nil errors returns codes.OK
+	var err error = nil
+	code := Code(err)
+	if code != codes.OK {
+		t.Errorf("wrong code; got:%+v want:%+v", code, codes.OK)
+	}
+}

@@ -133,6 +133,10 @@ func (e *eee) Format(s fmt.State, c rune) {
 
 // Code returns the code of the error. Returns codes.Unknown if not an error from this package.
 func Code(err error) codes.Code {
+	if err == nil {
+		return codes.OK
+	}
+
 	e, ok := err.(*eee)
 	if !ok {
 		return codes.Unknown
