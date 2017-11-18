@@ -2,6 +2,8 @@ package write
 
 import (
 	"github.com/gopherx/base/errors"
+
+	"github.com/golang/glog"
 )
 
 type BigEndian struct {
@@ -141,4 +143,16 @@ func (b *BigEndian) Bytes(bytes []byte) {
 	}
 
 	b.Offset += len(bytes)
+}
+
+// Uint16 writes an uint16 to the buffer/
+func Uint16(b []byte, v uint16) error {
+	if len(b) < 2 {
+		return errors.OutOfRange(nil, "buffer too small", b, v)
+	}
+
+	b[0] = byte(v >> 8)
+	b[1] = byte(v)
+	glog.Info(b)
+	return nil
 }

@@ -7,14 +7,21 @@ import (
 )
 
 type BigEndian struct {
-	r         io.Reader
-	tmp       []byte
-	Err       error
-	ReadBytes int
+	// r is the reader we are consuming data from.
+	r io.Reader
+
+	// tmp is the temporary buffer used for reads.
+	tmp []byte
+
+	// Err holds the first error encountered; once an error is found all operations are no-ops.
+	Err error
+
+	// Read holds all bytes read so far.
+	Read []byte
 }
 
 func NewBigEndian(r io.Reader) *BigEndian {
-	return &BigEndian{r, make([]byte, 12), nil, 0}
+	return &BigEndian{r, make([]byte, 12), nil, make([]byte, 0, 1024)}
 }
 
 func (e *BigEndian) readTo(dest []byte) error {
@@ -31,7 +38,7 @@ func (e *BigEndian) readTo(dest []byte) error {
 		e.Err = errors.DataLoss(nil, "not enough data; read: ", rn, " wanted: ", len(dest))
 	}
 
-	e.ReadBytes += len(dest)
+	e.Read = append(e.Read, dest...)
 	return e.Err
 }
 

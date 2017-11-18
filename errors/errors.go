@@ -21,6 +21,7 @@ type eee struct {
 	code    codes.Code
 	cause   error
 	desc    string
+	args    []interface{}
 	callers []uintptr
 }
 
@@ -40,7 +41,7 @@ func callers(skip int) []uintptr {
 }
 
 func newEee(code codes.Code, cause error, desc string, args []interface{}) *eee {
-	return &eee{code, cause, desc, callers(4)}
+	return &eee{code, cause, desc, args, callers(4)}
 }
 
 // Error implements the error interface.
@@ -56,6 +57,7 @@ var (
 		err error,
 		code codes.Code,
 		desc string,
+		args []interface{},
 		callers []uintptr) {
 
 		//...is the error from another package?
@@ -68,6 +70,8 @@ var (
 			indent,
 			code.String(), "] ",
 			desc,
+			" args:",
+			args,
 		)
 
 		frames := runtime.CallersFrames(callers)
@@ -105,7 +109,7 @@ func (e *eee) Format(s fmt.State, c rune) {
 		s.Write(sep)
 		updateIndent()
 
-		FormatError(s, c, indent, nil, cur.code, cur.desc, cur.callers)
+		FormatError(s, c, indent, nil, cur.code, cur.desc, cur.args, cur.callers)
 		// TODO(d): should only print newline when needed and not always
 
 		cnt++
@@ -126,7 +130,7 @@ func (e *eee) Format(s fmt.State, c rune) {
 		s.Write(sep)
 		cnt++
 		updateIndent()
-		FormatError(s, c, indent, cur.cause, codes.OK, "", nil)
+		FormatError(s, c, indent, cur.cause, codes.OK, "", nil, nil)
 		return
 	}
 }
