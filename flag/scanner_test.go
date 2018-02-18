@@ -12,43 +12,43 @@ func TestScannerScan(t *testing.T) {
 	tests := []struct {
 		args  []string
 		code  codes.Code
-		flags []Flag
+		flags []Spec
 		rem   []string
 	}{
 		{
 			[]string{"--a"},
 			codes.OK,
-			[]Flag{{"a", "", "--", ""}},
+			[]Spec{{"a", "", "--", ""}},
 			nil,
 		},
 		{
 			[]string{"--b", "c"},
 			codes.OK,
-			[]Flag{{"b", "c", "--", " "}},
+			[]Spec{{"b", "c", "--", " "}},
 			nil,
 		},
 		{
 			[]string{"-d"},
 			codes.OK,
-			[]Flag{{"d", "", "-", ""}},
+			[]Spec{{"d", "", "-", ""}},
 			nil,
 		},
 		{
 			[]string{"-e", "f"},
 			codes.OK,
-			[]Flag{{"e", "f", "-", " "}},
+			[]Spec{{"e", "f", "-", " "}},
 			nil,
 		},
 		{
 			[]string{"--g=h"},
 			codes.OK,
-			[]Flag{{"g", "h", "--", "="}},
+			[]Spec{{"g", "h", "--", "="}},
 			nil,
 		},
 		{
 			[]string{"-i=j"},
 			codes.OK,
-			[]Flag{{"i", "j", "-", "="}},
+			[]Spec{{"i", "j", "-", "="}},
 			nil,
 		},
 		{
@@ -72,13 +72,13 @@ func TestScannerScan(t *testing.T) {
 		{
 			[]string{"--", "doo", "foo", "bar"},
 			codes.OK,
-			[]Flag{},
+			[]Spec{},
 			[]string{"doo", "foo", "bar"},
 		},
 		{
 			[]string{"-i", "--j", "-k='hello'", "--l", "world", "--", "doo", "foo", "bar"},
 			codes.OK,
-			[]Flag{
+			[]Spec{
 				{"i", "", "-", ""},
 				{"j", "", "--", ""},
 				{"k", "'hello'", "-", "="},
@@ -89,15 +89,15 @@ func TestScannerScan(t *testing.T) {
 		{
 			[]string{"------m", "doo", "--", "foo", "bar"},
 			codes.OK,
-			[]Flag{{"m", "doo", "------", " "}},
+			[]Spec{{"m", "doo", "------", " "}},
 			[]string{"foo", "bar"},
 		},
 	}
 
 	for _, tc := range tests {
-		flags := []Flag{}
+		flags := []Spec{}
 
-		fn := func(f Flag) error {
+		fn := func(f Spec) error {
 			flags = append(flags, f)
 			return nil
 		}

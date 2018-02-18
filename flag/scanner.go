@@ -6,8 +6,8 @@ import (
 	"github.com/gopherx/base/errors"
 )
 
-// Flag holds all data from a parsed flag.
-type Flag struct {
+// Spec holds all data from a parsed flag.
+type Spec struct {
 	Name      string
 	Value     string
 	Header    string
@@ -15,7 +15,7 @@ type Flag struct {
 }
 
 // FlagFunc is called by Scan for every found flag.
-type FlagFunc func(f Flag) error
+type FlagFunc func(f Spec) error
 
 // Scan scans Args for flags and issues callbacks when a new flag is found.
 // All flags are assumed to start with '-' or '--' or actually any '-'.
@@ -101,6 +101,6 @@ func scanFirstFlag(args []string, fn FlagFunc) ([]string, bool, error) {
 		separator = ""
 	}
 
-	err := fn(Flag{name, value, header, separator})
+	err := fn(Spec{name, value, header, separator})
 	return tail, false, err
 }
