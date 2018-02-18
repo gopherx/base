@@ -10,58 +10,50 @@ import (
 
 func TestScannerScan(t *testing.T) {
 	tests := []struct {
-		args   []string
-		code   codes.Code
-		flags  []string
-		values []string
-		rem    []string
+		args  []string
+		code  codes.Code
+		flags []Flag
+		rem   []string
 	}{
 		{
 			[]string{"--a"},
 			codes.OK,
-			[]string{"a"},
-			[]string{""},
+			[]Flag{{"a", "", "--", ""}},
 			nil,
 		},
 		{
 			[]string{"--b", "c"},
 			codes.OK,
-			[]string{"b"},
-			[]string{"c"},
+			[]Flag{{"b", "c", "--", " "}},
 			nil,
 		},
 		{
 			[]string{"-d"},
 			codes.OK,
-			[]string{"d"},
-			[]string{""},
+			[]Flag{{"d", "", "-", ""}},
 			nil,
 		},
 		{
 			[]string{"-e", "f"},
 			codes.OK,
-			[]string{"e"},
-			[]string{"f"},
+			[]Flag{{"e", "f", "-", " "}},
 			nil,
 		},
 		{
 			[]string{"--g=h"},
 			codes.OK,
-			[]string{"g"},
-			[]string{"h"},
+			[]Flag{{"g", "h", "--", "="}},
 			nil,
 		},
 		{
 			[]string{"-i=j"},
 			codes.OK,
-			[]string{"i"},
-			[]string{"j"},
+			[]Flag{{"i", "j", "-", "="}},
 			nil,
 		},
 		{
 			[]string{"k"},
 			codes.InvalidArgument,
-			nil,
 			nil,
 			nil,
 		},
@@ -70,39 +62,43 @@ func TestScannerScan(t *testing.T) {
 			codes.InvalidArgument,
 			nil,
 			nil,
-			nil,
 		},
 		{
 			[]string{"--l="},
 			codes.InvalidArgument,
 			nil,
 			nil,
-			nil,
 		},
 		{
 			[]string{"--", "doo", "foo", "bar"},
 			codes.OK,
-			[]string{},
-			[]string{},
+			[]Flag{},
 			[]string{"doo", "foo", "bar"},
 		},
 		{
 			[]string{"-i", "--j", "-k='hello'", "--l", "world", "--", "doo", "foo", "bar"},
 			codes.OK,
-			[]string{"i", "j", "k", "l"},
-			[]string{"", "", "'hello'", "world"},
+			[]Flag{
+				{"i", "", "-", ""},
+				{"j", "", "--", ""},
+				{"k", "'hello'", "-", "="},
+				{"l", "world", "--", " "},
+			},
 			[]string{"doo", "foo", "bar"},
 		},
-		
+		{
+			[]string{"------m", "doo", "--", "foo", "bar"},
+			codes.OK,
+			[]Flag{{"m", "doo", "------", " "}},
+			[]string{"foo", "bar"},
+		},
 	}
 
 	for _, tc := range tests {
-		flags := []string{}
-		values := []string{}
+		flags := []Flag{}
 
-		fn := func(flag, value string) error {
-			flags = append(flags, flag)
-			values = append(values, value)
+		fn := func(f Flag) error {
+			flags = append(flags, f)
 			return nil
 		}
 
@@ -114,10 +110,10 @@ func TestScannerScan(t *testing.T) {
 			continue
 		}
 
-		if !reflect.DeepEqual(flags, tc.flags) || !reflect.DeepEqual(values, tc.values) || !reflect.DeepEqual(rem, tc.rem) {
-			t.Log(tc.args)
-			t.Log(flags, tc.flags)
-			t.Log(values, tc.values)
+		if !reflect.DeepEqual(flags, tc.flags) {
+			t.Log(tc)
+			t.Log(tc.flags)
+			t.Log(flags)
 			t.Log(rem, tc.rem)
 			t.Error("scan failed")
 		}

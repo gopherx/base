@@ -6,11 +6,22 @@ import (
 	"github.com/gopherx/base/errors"
 )
 
+// Flag holds all data from a parsed flag.
+type Flag struct {
+	Name      string
+	Value     string
+	Header    string
+	Separator string
+}
+
+// FlagFunc is called by Scan for every found flag.
+type FlagFunc func(f Flag) error
+
 // Scan scans Args for flags and issues callbacks when a new flag is found.
-// All flags are assumed to start with '-' or '--'. They may be followed by
-// a value that may or may not be separated by '='.
+// All flags are assumed to start with '-' or '--' or actually any '-'.
+// They may be followed by a value that may or may not be separated by '='.
 // If the flag have no value then the value string is empty.
-func Scan(args []string, fn func(flag, value string) error) ([]string, error) {
+func Scan(args []string, fn FlagFunc) ([]string, error) {
 	next := args
 	for {
 		rem, term, err := scanFirstFlag(next, fn)
@@ -35,29 +46,35 @@ func cut(s []string) (string, []string) {
 	return h, t
 }
 
-func scanFirstFlag(args []string, fn func(flag, value string) error) ([]string, bool, error) {
-	head, tail := cut(args)
+func split(f string) (string, string) {
 	nameAt := 0
+	for _, c := range f {
+		if c == '-' {
+			nameAt++
+			continue
+		}
+
+		break
+	}
+
+	return f[:nameAt], f[nameAt:]
+}
+
+func scanFirstFlag(args []string, fn FlagFunc) ([]string, bool, error) {
+	head, tail := cut(args)
 	if len(head) < 2 {
 		//...too short; can't be a flag.
 		return nil, false, errors.InvalidArgument(nil, "first argument too short; must be >= 2", args)
 	}
 
-	if head[0] == '-' {
-		nameAt++
-	}
-
-	if head[1] == '-' {
-		nameAt++
-	}
-
-	name := head[nameAt:]
+	header, name := split(head)
 	value := ""
 	if len(name) == 0 {
 		//...terminator '--' found
 		return tail, true, nil
 	}
 
+	separator := "="
 	eqAt := strings.IndexByte(name, '=')
 	if eqAt == 0 {
 		return nil, false, errors.InvalidArgument(nil, "malformed flag found", args)
@@ -69,14 +86,21 @@ func scanFirstFlag(args []string, fn func(flag, value string) error) ([]string, 
 		if len(value) == 0 {
 			return nil, false, errors.InvalidArgument(nil, "malformed flag found", args)
 		}
-	} else if len(value) == 0 && len(tail) > 0 {
+	}
+
+	if len(value) == 0 && len(tail) > 0 {
 		peek, tmp := cut(tail)
 		if len(peek) > 0 && peek[0] != '-' {
 			value = peek
 			tail = tmp
+			separator = " "
 		}
 	}
 
-	err := fn(name, value)
+	if len(value) == 0 {
+		separator = ""
+	}
+
+	err := fn(Flag{name, value, header, separator})
 	return tail, false, err
 }
