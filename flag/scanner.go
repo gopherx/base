@@ -6,8 +6,8 @@ import (
 	"github.com/gopherx/base/errors"
 )
 
-// Flag holds all data from a parsed flag.
-type Flag struct {
+// Spec holds all data from a parsed flag.
+type Spec struct {
 	Name      string
 	Value     string
 	Header    string
@@ -15,13 +15,18 @@ type Flag struct {
 }
 
 // FlagFunc is called by Scan for every found flag.
-type FlagFunc func(f Flag) error
+type FlagFunc func(f Spec) error
 
 // Scan scans Args for flags and issues callbacks when a new flag is found.
 // All flags are assumed to start with '-' or '--' or actually any '-'.
 // They may be followed by a value that may or may not be separated by '='.
-// If the flag have no value then the value string is empty.
+// If the flag have no value then the Value field is empty.
+// If the flag have no header then only flags with '=' will have a value.
 func Scan(args []string, fn FlagFunc) ([]string, error) {
+	if len(args) == 0 {
+		return nil, nil
+	}
+
 	next := args
 	for {
 		rem, term, err := scanFirstFlag(next, fn)
@@ -37,7 +42,12 @@ func Scan(args []string, fn FlagFunc) ([]string, error) {
 	}
 }
 
+// cut cuts the head of the list and returns the head and tail.
 func cut(s []string) (string, []string) {
+	if len(s) == 0 {
+		return "", nil
+	}
+
 	h := s[0]
 	var t []string
 	if len(s) > 1 {
@@ -46,30 +56,36 @@ func cut(s []string) (string, []string) {
 	return h, t
 }
 
+// split splits a flag '--N' into '--' and 'N'. The leading dashes are considered
+// to be a header iff they start at index zero and end at least one char before
+// the end of the string. A string with only dashes will return the dashes as name.
 func split(f string) (string, string) {
-	nameAt := 0
+	dashCnt := 0
 	for _, c := range f {
 		if c == '-' {
-			nameAt++
+			dashCnt++
 			continue
 		}
 
 		break
 	}
 
-	return f[:nameAt], f[nameAt:]
+	if dashCnt == 0 || dashCnt == len(f) {
+		return "", f
+	}
+
+	return f[:dashCnt], f[dashCnt:]
 }
 
 func scanFirstFlag(args []string, fn FlagFunc) ([]string, bool, error) {
-	head, tail := cut(args)
-	if len(head) < 2 {
-		//...too short; can't be a flag.
-		return nil, false, errors.InvalidArgument(nil, "first argument too short; must be >= 2", args)
+	ff, tail := cut(args)
+	if len(ff) == 0 {
+		return nil, false, nil
 	}
 
-	header, name := split(head)
+	header, name := split(ff)
 	value := ""
-	if len(name) == 0 {
+	if len(header) == 0 && name == "--" {
 		//...terminator '--' found
 		return tail, true, nil
 	}
@@ -88,7 +104,7 @@ func scanFirstFlag(args []string, fn FlagFunc) ([]string, bool, error) {
 		}
 	}
 
-	if len(value) == 0 && len(tail) > 0 {
+	if len(value) == 0 && len(tail) > 0 && len(header) > 0 {
 		peek, tmp := cut(tail)
 		if len(peek) > 0 && peek[0] != '-' {
 			value = peek
@@ -101,6 +117,6 @@ func scanFirstFlag(args []string, fn FlagFunc) ([]string, bool, error) {
 		separator = ""
 	}
 
-	err := fn(Flag{name, value, header, separator})
+	err := fn(Spec{name, value, header, separator})
 	return tail, false, err
 }
